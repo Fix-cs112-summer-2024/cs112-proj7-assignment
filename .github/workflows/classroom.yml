@@ -1,0 +1,39 @@
+name: Autograding Tests
+'on':
+  - push
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: arc-runners-cs112
+    container:
+      image: calvincsinfrastructure/devcontainer-cs112-autograde:latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: CongaLine test
+        id: congaline-test
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: CongaLine test
+          setup-command: sudo pip install pexpect; make proj7
+          command: python test.exp
+          timeout: 5
+      - name: List test
+        id: list-test
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: List test
+          setup-command: make
+          command: './tester -s'
+          timeout: 5
+      - name: Autograding Reporter
+        uses: classroom-resources/autograding-grading-reporter@v1
+        env:
+          CONGALINE-TEST_RESULTS: '${{steps.congaline-test.outputs.result}}'
+          LIST-TEST_RESULTS: '${{steps.list-test.outputs.result}}'
+        with:
+          runners: congaline-test,list-test
